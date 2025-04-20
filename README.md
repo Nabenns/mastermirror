@@ -1,188 +1,113 @@
-# Discord Auto-Forwarder v0.1.0
+# Discord Auto-Forwarder
 
-Discord Auto-Forwarder adalah aplikasi untuk meneruskan pesan dari channel Discord ke webhook Discord lainnya secara otomatis.
+A utility to forward messages from Discord servers to webhooks, allowing you to mirror content from one server to another.
 
-## Fitur
+## Features
 
-- Menghubungkan ke akun Discord menggunakan token pengguna
-- Meneruskan pesan dari channel tertentu ke webhook Discord lainnya
-- Mendukung banyak server dan channel sekaligus
-- Antarmuka web yang mudah digunakan untuk mengelola koneksi
-- Log aktivitas untuk memantau pesan yang diteruskan
+- Connect to multiple Discord servers
+- Forward messages from selected channels to webhook URLs
+- Track message forwarding statistics
+- Web interface for easy configuration
+- Optional ngrok integration for remote access
 
-## Cara Menggunakan
+## Prerequisites
 
-### 1. Instalasi
+- [Node.js](https://nodejs.org/) (v14 or higher)
+- A Discord user token (selfbot)
+- For remote access: [ngrok](https://ngrok.com/) account and authtoken
 
-```
-git clone https://github.com/username/discord-autoforwarder-v2.git
-cd discord-autoforwarder-v2
-npm install
-```
+## Installation
 
-### 2. Konfigurasi
-
-Buat file `.env` di direktori root aplikasi:
-
-```
-PORT=3000
-```
-
-Anda dapat mengganti port jika diperlukan.
-
-### 3. Membuat Direktori Data
-
-Pastikan direktori untuk database SQLite tersedia:
-
-```
-mkdir -p data
-```
-
-### 4. Menjalankan Aplikasi
-
-```
-npm start
-```
-
-Untuk pengembangan (dengan auto-restart saat ada perubahan):
-
-```
-npm run dev
-```
-
-Aplikasi akan berjalan di `http://localhost:3000` (atau port yang ditentukan di .env file).
-
-### 5. Cara Menggunakan
-
-#### Menambahkan Server Discord
-
-1. Buka halaman **Servers**
-2. Masukkan nama server (bisa bebas) dan token Discord Anda
-3. Klik tombol **Add Server**
-4. Setelah server ditambahkan, klik tombol **Connect** untuk menghubungkan
-
-> **Catatan**: Menggunakan token user Discord mungkin melanggar ToS Discord. Gunakan dengan risiko Anda sendiri.
-
-#### Mendapatkan Token Discord
-
-1. Buka Discord di browser web
-2. Tekan F12 untuk membuka Developer Tools
-3. Pilih tab Network
-4. Refresh halaman
-5. Temukan request ke "discord.com"
-6. Cari di Headers - Request Headers untuk "Authorization"
-
-#### Menambahkan Channel untuk Diteruskan
-
-1. Buka halaman **Channels**
-2. Pilih server yang telah terhubung
-3. Masukkan ID channel Discord yang ingin diteruskan
-4. Masukkan URL webhook tujuan
-5. Klik tombol **Add Channel**
-
-#### Mendapatkan ID Channel Discord
-
-1. Aktifkan Developer Mode di Discord (User Settings > Advanced > Developer Mode)
-2. Klik kanan pada channel > Copy ID
-
-#### Membuat Webhook Discord
-
-1. Buka channel Discord tujuan
-2. Buka pengaturan channel > Integrations > Webhooks
-3. Buat webhook baru
-4. Salin URL webhook
-
-#### Mengaktifkan/Menonaktifkan Pengalihan
-
-- Pada halaman **Channels**, gunakan tombol **Enable Forwarding** atau **Disable Forwarding** untuk mengontrol setiap channel
-
-#### Memantau Aktivitas
-
-- Buka halaman **Logs** untuk melihat riwayat pesan yang diteruskan
-- Halaman **Dashboard** menampilkan ringkasan status sistem
-
-## Menjalankan di Server RDP Windows
-
-### Persiapan
-
-1. Pastikan Node.js sudah terinstall di server RDP
-2. Download/Clone repository ke server RDP
+1. Clone or download this repository
+2. Create a `.env` file in the root directory with the following variables:
    ```
-   git clone https://github.com/username/discord-autoforwarder-v2.git
+   PORT=3000
+   DISCORD_TOKEN=your_discord_token_here
    ```
-   Atau upload folder aplikasi ke server RDP
+3. Install dependencies:
+   ```
+   npm install
+   ```
 
-### Menggunakan Batch Files (Cara Mudah)
+## Quick Start
 
-Di dalam folder aplikasi, tersedia beberapa file batch (.bat) untuk memudahkan penggunaan:
+The easiest way to start using Discord Auto-Forwarder is through the all-in-one launcher:
 
-1. **Instalasi Awal**: Double-click file `setup.bat`
-   - File ini akan menginstall semua dependensi yang diperlukan
-   - Menginstall PM2 secara global
-   - Membuat folder data
-   - Membuat file .env dengan konfigurasi default
+1. Run `autoforwarder.bat`
+2. Select option 1 to start the Discord Auto-Forwarder
+3. Access the web interface at http://localhost:3000
 
-2. **Menjalankan Aplikasi**: Double-click file `start-autoforwarder.bat`
-   - Aplikasi akan berjalan sebagai service di background menggunakan PM2
-   - Browser akan terbuka otomatis dengan alamat http://localhost:3000
-   - Aplikasi akan tetap berjalan meskipun anda logout dari RDP
+## Setup with ngrok (For Remote Access)
 
-3. **Menghentikan Aplikasi**: Double-click file `stop-autoforwarder.bat`
-   - Menghentikan aplikasi yang sedang berjalan
+If you want to access your Discord Auto-Forwarder from another device:
 
-4. **Restart Aplikasi**: Double-click file `restart-autoforwarder.bat` 
-   - Berguna jika aplikasi mengalami error atau perlu di-refresh
+1. Run `autoforwarder.bat`
+2. Select option 4 to set up ngrok (first-time only)
+3. Enter your ngrok authtoken when prompted
+4. Select option 5 to start an ngrok tunnel
+5. Access the web interface using the ngrok URL provided
 
-5. **Melihat Log**: Double-click file `view-logs.bat`
-   - Menampilkan log aplikasi secara real-time
-   - Tekan Ctrl+C untuk keluar dari tampilan log
+### About Batch Files
 
-### Memastikan Aplikasi Berjalan Setelah Reboot
+The application includes several batch files to make operation easier:
 
-Untuk memastikan aplikasi berjalan otomatis setelah server di-restart:
+- **autoforwarder.bat**: All-in-one control panel with all features in a single menu
+- **setup-ngrok.bat**: One-time setup for ngrok - downloads, installs, and authenticates ngrok
+- **ngrok-tunnel.bat**: Creates a tunnel to expose your local server to the internet
+- **start.bat**: Starts the Discord Auto-Forwarder service
+- **stop-autoforwarder.bat**: Stops the running service
+- **setup-env.bat**: Configures your .env file with guided prompts
+- **github-push.bat**: Helps push your changes to GitHub
 
-1. Buat shortcut file `start-autoforwarder.bat` 
-2. Tekan `Win + R`, ketik `shell:startup` dan tekan Enter
-3. Pindahkan shortcut ke folder Startup yang terbuka
+All batch files include proper error handling and will pause before closing so you can see any messages.
 
-### Troubleshooting
+## Usage
 
-1. **Error "Port already in use"**: 
-   - Jalankan `stop-autoforwarder.bat` terlebih dahulu
-   - Atau ubah port di file `.env`
+### Web Interface
 
-2. **PM2 tidak terinstall**: 
-   - Jalankan `npm install -g pm2` secara manual
+The web interface provides an easy way to:
+- View and manage connected Discord servers
+- Configure channel forwarding
+- Monitor message statistics
+- Set up webhook destinations
 
-3. **Aplikasi crash/tidak berjalan**:
-   - Periksa log dengan menjalankan `view-logs.bat`
-   - Restart aplikasi dengan `restart-autoforwarder.bat`
+### Adding a Server
 
-## Keamanan
+1. Go to the Servers page
+2. Click "Add Server"
+3. Enter your Discord token
+4. The server will be added to your list
 
-- **PENTING**: Token Discord Anda memberi akses penuh ke akun. Jangan bagikan dengan siapa pun.
-- Aplikasi ini menyimpan token dalam database lokal. Pastikan keamanan komputer Anda.
-- Pastikan hanya Anda yang memiliki akses ke alamat web aplikasi ini.
+### Setting Up Forwarding
 
-## Pemecahan Masalah
+1. Go to the Channels page
+2. Find the channel you want to forward
+3. Enter the webhook URL where messages should be sent
+4. Toggle the "Forwarding" switch to enable forwarding
 
-- **Error "Invalid Discord token"**: Token Discord Anda tidak valid atau telah kedaluwarsa. Dapatkan token baru.
-- **Error "Channel not found"**: ID channel tidak valid atau akun tidak memiliki akses ke channel tersebut.
-- **Error "Discord client not found"**: Server belum terhubung. Klik Connect terlebih dahulu.
-- **Pesan tidak diteruskan**: Pastikan channel telah diaktifkan untuk pengalihan dan webhook URL valid.
-- **Error saat startup**: Pastikan file database.sqlite dapat dibuat dan diakses. Cek folder permissions.
+## Troubleshooting
 
-## Teknologi
+- Check the logs directory for error logs
+- Make sure your Discord token is valid
+- Verify that webhook URLs are correctly formatted
+- Ensure the port is not in use by another application
 
-- Node.js
-- Express
-- SQLite
-- discord.js-selfbot-v13
-- EJS templating
-- Bootstrap UI
+### Common Issues
 
-## Kontak & Copyright
+- **Batch files close immediately**: If batch files close too quickly, run them from the command line to see error messages
+- **Ngrok not connecting**: Verify your authtoken is correct and that your account has an active plan if using custom domains
+- **Port already in use**: Use `stop-autoforwarder.bat` to stop any running instances, or change the port in your .env file
 
-&copy; 2025 Benss | Discord: .naban
+## Security Considerations
 
-*Penggunaan aplikasi ini adalah tanggung jawab pengguna sepenuhnya. Pengembang tidak bertanggung jawab atas penyalahgunaan atau pelanggaran ToS Discord.* 
+- Your Discord token grants full access to your account. Never share it.
+- If using ngrok, consider setting up authentication for your tunnel.
+- The application stores sensitive information in the local database.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Disclaimer
+
+This application uses selfbot functionality, which is against Discord's Terms of Service. Use at your own risk. The developers are not responsible for any consequences of using this software, including account termination. 
