@@ -101,6 +101,63 @@ Aplikasi akan berjalan di `http://localhost:3000` (atau port yang ditentukan di 
 - Buka halaman **Logs** untuk melihat riwayat pesan yang diteruskan
 - Halaman **Dashboard** menampilkan ringkasan status sistem
 
+## Menjalankan di Server RDP Windows
+
+### Persiapan
+
+1. Pastikan Node.js sudah terinstall di server RDP
+2. Download/Clone repository ke server RDP
+   ```
+   git clone https://github.com/username/discord-autoforwarder-v2.git
+   ```
+   Atau upload folder aplikasi ke server RDP
+
+### Menggunakan Batch Files (Cara Mudah)
+
+Di dalam folder aplikasi, tersedia beberapa file batch (.bat) untuk memudahkan penggunaan:
+
+1. **Instalasi Awal**: Double-click file `setup.bat`
+   - File ini akan menginstall semua dependensi yang diperlukan
+   - Menginstall PM2 secara global
+   - Membuat folder data
+   - Membuat file .env dengan konfigurasi default
+
+2. **Menjalankan Aplikasi**: Double-click file `start-autoforwarder.bat`
+   - Aplikasi akan berjalan sebagai service di background menggunakan PM2
+   - Browser akan terbuka otomatis dengan alamat http://localhost:3000
+   - Aplikasi akan tetap berjalan meskipun anda logout dari RDP
+
+3. **Menghentikan Aplikasi**: Double-click file `stop-autoforwarder.bat`
+   - Menghentikan aplikasi yang sedang berjalan
+
+4. **Restart Aplikasi**: Double-click file `restart-autoforwarder.bat` 
+   - Berguna jika aplikasi mengalami error atau perlu di-refresh
+
+5. **Melihat Log**: Double-click file `view-logs.bat`
+   - Menampilkan log aplikasi secara real-time
+   - Tekan Ctrl+C untuk keluar dari tampilan log
+
+### Memastikan Aplikasi Berjalan Setelah Reboot
+
+Untuk memastikan aplikasi berjalan otomatis setelah server di-restart:
+
+1. Buat shortcut file `start-autoforwarder.bat` 
+2. Tekan `Win + R`, ketik `shell:startup` dan tekan Enter
+3. Pindahkan shortcut ke folder Startup yang terbuka
+
+### Troubleshooting
+
+1. **Error "Port already in use"**: 
+   - Jalankan `stop-autoforwarder.bat` terlebih dahulu
+   - Atau ubah port di file `.env`
+
+2. **PM2 tidak terinstall**: 
+   - Jalankan `npm install -g pm2` secara manual
+
+3. **Aplikasi crash/tidak berjalan**:
+   - Periksa log dengan menjalankan `view-logs.bat`
+   - Restart aplikasi dengan `restart-autoforwarder.bat`
+
 ## Keamanan
 
 - **PENTING**: Token Discord Anda memberi akses penuh ke akun. Jangan bagikan dengan siapa pun.
