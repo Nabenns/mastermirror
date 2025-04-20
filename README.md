@@ -19,14 +19,15 @@ A utility to forward messages from Discord servers to webhooks, allowing you to 
 ## Installation
 
 1. Clone or download this repository
-2. Create a `.env` file in the root directory with the following variables:
+2. Run `run-setup.bat` to automatically:
+   - Install dependencies
+   - Set up PM2 for process management
+   - Install and configure ngrok
+   - Create default configuration files
+3. Or manually create a `.env` file with:
    ```
    PORT=3000
    DISCORD_TOKEN=your_discord_token_here
-   ```
-3. Install dependencies:
-   ```
-   npm install
    ```
 
 ## Quick Start
@@ -51,12 +52,8 @@ If you want to access your Discord Auto-Forwarder from another device:
 
 The application includes several batch files to make operation easier:
 
+- **run-setup.bat**: One-click setup for all components (dependencies, PM2, ngrok)
 - **autoforwarder.bat**: All-in-one control panel with all features in a single menu
-- **setup-ngrok.bat**: One-time setup for ngrok - downloads, installs, and authenticates ngrok
-- **ngrok-tunnel.bat**: Creates a tunnel to expose your local server to the internet
-- **start.bat**: Starts the Discord Auto-Forwarder service
-- **stop-autoforwarder.bat**: Stops the running service
-- **setup-env.bat**: Configures your .env file with guided prompts
 - **github-push.bat**: Helps push your changes to GitHub
 
 All batch files include proper error handling and will pause before closing so you can see any messages.
@@ -84,6 +81,19 @@ The web interface provides an easy way to:
 2. Find the channel you want to forward
 3. Enter the webhook URL where messages should be sent
 4. Toggle the "Forwarding" switch to enable forwarding
+
+## Process Management with PM2
+
+The application is set up to run with PM2, which provides:
+- Automatic startup on system boot
+- Process monitoring and restart on failure
+- Log management
+
+Commands for managing the application:
+- `pm2 status` - View application status
+- `pm2 logs discord-autoforwarder` - View application logs
+- `pm2 restart discord-autoforwarder` - Restart the application
+- `pm2 stop discord-autoforwarder` - Stop the application
 
 ## Troubleshooting
 
