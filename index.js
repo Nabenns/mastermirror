@@ -81,6 +81,36 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 // Discord clients map (token -> client)
 const discordClients = new Map();
 
+// Load the ClientUserSettingManager class to patch
+try {
+  // Monkey patch to fix the ClientUserSettingManager issue with null friend_source_flags
+  const { ClientUserSettingManager } = require('discord.js-selfbot-v13');
+  
+  // Check if the class exists and has the _patch method before attempting to patch
+  if (ClientUserSettingManager && ClientUserSettingManager.prototype && ClientUserSettingManager.prototype._patch) {
+    const originalPatch = ClientUserSettingManager.prototype._patch;
+    
+    // Override the _patch method to handle null friend_source_flags
+    ClientUserSettingManager.prototype._patch = function(data) {
+      // Add a defensive check for friend_source_flags
+      if (!data.friend_source_flags) {
+        data.friend_source_flags = { 
+          all: false,
+          mutual_friends: false,
+          mutual_guilds: false
+        };
+      }
+      return originalPatch.call(this, data);
+    };
+    console.log("Successfully patched ClientUserSettingManager to handle null friend_source_flags");
+  } else {
+    console.warn("Could not patch ClientUserSettingManager - class structure may have changed");
+  }
+} catch (error) {
+  console.error("Error while patching ClientUserSettingManager:", error.message);
+  // Continue execution even if patching fails
+}
+
 // Connect to Discord with a token
 async function connectToDiscord(serverId, token) {
   try {
@@ -93,7 +123,19 @@ async function connectToDiscord(serverId, token) {
     const client = new Client({
       checkUpdate: false,
       autoRedeemNitro: false,
-      captchaService: null
+      captchaService: null,
+      patchVoice: false
+    });
+    
+    // Handle unhandled promise rejections in the client
+    client.on('error', (error) => {
+      console.error(`Client error for server ${serverId}:`, error);
+    });
+
+    // Add enhanced error handling for client events
+    process.on('unhandledRejection', (reason, promise) => {
+      console.warn('Unhandled Rejection at:', promise, 'reason:', reason);
+      // Don't crash the application, just log the error
     });
     
     // Login
