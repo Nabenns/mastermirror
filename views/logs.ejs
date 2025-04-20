@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs - Discord Auto-Forwarder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .navbar {
+            background-color: #5865F2;
+            color: white;
+        }
+        .nav-link, .navbar-brand {
+            color: white;
+        }
+        .nav-link:hover, .navbar-brand:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+        .card-header {
+            background-color: #5865F2;
+            color: white;
+            font-weight: bold;
+        }
+        .connection-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #57F287;
+            color: white;
+        }
+        .disconnected {
+            background-color: #ED4245;
+            color: white;
+        }
+        .log-item {
+            border-left: 4px solid #dee2e6;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            transition: all 0.2s;
+        }
+        .log-item:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .log-item.success {
+            border-left-color: #57F287;
+        }
+        .log-item.error {
+            border-left-color: #ED4245;
+        }
+        .log-table {
+            font-size: 0.9rem;
+        }
+        .log-table th {
+            background-color: #5865F2;
+            color: white;
+        }
+        .log-content {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .log-timestamp {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">Discord Auto-Forwarder</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/logs">Logs</a>
+                    </li>
+                </ul>
+                <div class="ms-auto">
+                    <span class="connection-status <%= isConnected ? 'connected' : 'disconnected' %>">
+                        <i class="bi <%= isConnected ? 'bi-wifi' : 'bi-wifi-off' %>"></i>
+                        <%= isConnected ? 'Connected' : 'Disconnected' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <% if (error) { %>
+            <div class="alert alert-danger alert-dismissible fade show">
+                <%= error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+
+        <% if (success) { %>
+            <div class="alert alert-success alert-dismissible fade show">
+                <%= success %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Message Logs</h5>
+                <button id="refreshBtn" class="btn btn-sm btn-light">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <% if (logs.length === 0) { %>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No logs found.
+                    </div>
+                <% } else { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover log-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Server</th>
+                                    <th>Channel</th>
+                                    <th>Author</th>
+                                    <th>Content</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% logs.forEach(log => { %>
+                                    <tr class="<%= log.status === 'error' ? 'table-danger' : (log.status === 'success' ? 'table-success' : '') %>">
+                                        <td class="log-timestamp">
+                                            <%= new Date(log.timestamp).toLocaleString() %>
+                                        </td>
+                                        <td><%= log.server_name || 'Unknown' %></td>
+                                        <td><%= log.channel_name || 'Unknown' %></td>
+                                        <td><%= log.author %></td>
+                                        <td class="log-content" title="<%= log.content %>">
+                                            <%= log.content || '(No content)' %>
+                                        </td>
+                                        <td>
+                                            <% if (log.status === 'error') { %>
+                                                <span class="badge bg-danger" title="<%= log.error_message %>">
+                                                    <i class="bi bi-x-circle"></i> Failed
+                                                </span>
+                                            <% } else if (log.status === 'success') { %>
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle"></i> Forwarded
+                                                </span>
+                                            <% } else { %>
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-clock"></i> Pending
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light py-3 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-muted">Discord Auto-Forwarder v0.1.0 | &copy; 2025 Benss | Discord: .naban</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Refresh button functionality
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            window.location.reload();
+        });
+    </script>
+</body>
+</html> 
