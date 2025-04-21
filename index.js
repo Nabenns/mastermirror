@@ -168,16 +168,34 @@ async function connectToDiscord(serverId, token) {
           const forwardChannel = channels.find(ch => ch.id === message.channel.id);
           if (!forwardChannel) return;
           
-          // Don't forward bot messages or messages without content
-          if (message.author.bot || (!message.content && !message.attachments.size)) return;
+          // Hanya filter pesan bot, bukan webhook atau pengguna dengan tag APP
+          // Don't forward bot messages (but allow webhooks) or messages without content and attachments
+          if ((message.author.bot && !message.webhookId) || (!message.content && !message.attachments.size)) return;
           
           try {
+            // Log the message for debugging
+            console.log(`Processing message from ${message.author.username} (Webhook: ${message.webhookId ? 'Yes' : 'No'})`);
+            console.log(`Message content: ${message.content}`);
+            
             // Create webhook payload
             const webhookData = {
               username: message.author.username,
               avatar_url: message.author.displayAvatarURL(),
               content: message.content || " " // Tambahkan spasi jika tidak ada konten untuk menghindari error empty message
             };
+            
+            // Jika ini dari webhook, tambahkan indikator di username (opsional)
+            if (message.webhookId) {
+              // Kita bisa menandai bahwa ini dari webhook, tapi simpan username aslinya
+              // webhookData.username = `${webhookData.username} [Webhook]`;
+            }
+            
+            // Ekstrak tag APP dari konten pesan jika ada
+            const appTagMatch = message.content.match(/APP/);
+            if (appTagMatch) {
+              // Kita tetap meneruskan pesan dengan tag APP tanpa modifikasi
+              console.log("Found APP tag in message");
+            }
             
             // Jika ada attachment, tambahkan embeds untuk gambar
             if (message.attachments.size > 0) {
@@ -215,7 +233,7 @@ async function connectToDiscord(serverId, token) {
                 client.user.tag,
                 message.channel.id,
                 message.channel.name,
-                message.author.tag,
+                message.author.tag + (message.webhookId ? ' [Webhook]' : ''),
                 (message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '')) +
                 (message.attachments.size > 0 ? ` [+${message.attachments.size} attachment(s)]` : ''),
                 'success'
@@ -234,7 +252,7 @@ async function connectToDiscord(serverId, token) {
                 client.user.tag,
                 message.channel.id,
                 message.channel.name,
-                message.author.tag,
+                message.author.tag + (message.webhookId ? ' [Webhook]' : ''),
                 (message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '')) +
                 (message.attachments.size > 0 ? ` [+${message.attachments.size} attachment(s)]` : ''),
                 'error',
