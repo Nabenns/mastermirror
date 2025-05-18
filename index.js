@@ -169,8 +169,8 @@ async function connectToDiscord(serverId, token) {
           if (!forwardChannel) return;
           
           // Hanya filter pesan bot, bukan webhook atau pengguna dengan tag APP
-          // Don't forward bot messages (but allow webhooks) or messages without content and attachments
-          if ((message.author.bot && !message.webhookId) || (!message.content && !message.attachments.size)) return;
+          // Don't forward messages without content, attachments, or embeds
+          if (!message.content && !message.attachments.size && !message.embeds.length) return;
           
           try {
             // Log the message for debugging
@@ -197,18 +197,19 @@ async function connectToDiscord(serverId, token) {
               console.log("Found APP tag in message");
             }
             
-            // Jika ada attachment, tambahkan embeds untuk gambar
+            // Jika ada attachment, tambahkan URL gambar ke content agar preview besar
             if (message.attachments.size > 0) {
-              webhookData.embeds = [];
+              // Hapus embed jika ada
+              if (webhookData.embeds) delete webhookData.embeds;
               
               message.attachments.forEach(attachment => {
-                // Hanya tambahkan gambar ke embeds
+                // Jika gambar, tambahkan URL ke content
                 if (attachment.contentType && attachment.contentType.startsWith('image/')) {
-                  webhookData.embeds.push({
-                    image: {
-                      url: attachment.url
-                    }
-                  });
+                  if (webhookData.content === " ") {
+                    webhookData.content = attachment.url;
+                  } else {
+                    webhookData.content += `\n${attachment.url}`;
+                  }
                 } else {
                   // Tambahkan URL file jika bukan gambar
                   if (webhookData.content === " ") {
@@ -220,10 +221,26 @@ async function connectToDiscord(serverId, token) {
               });
             }
             
+            // Jika ada embed message, tambahkan ke webhookData.embeds
+            if (message.embeds.length > 0) {
+              if (!webhookData.embeds) webhookData.embeds = [];
+              message.embeds.forEach(embed => {
+                webhookData.embeds.push(embed);
+              });
+            }
+            
             // Send to webhook
             await axios.post(forwardChannel.webhook_url, webhookData);
             
             // Log success
+            let logContent = message.content || '';
+            if (message.attachments.size > 0) {
+              message.attachments.forEach(att => {
+                logContent += `\n${att.name}: ${att.url}`;
+              });
+            }
+            logContent = logContent.substring(0, 1000); // batasi panjang log
+
             db.run(
               `INSERT INTO logs (timestamp, server_id, server_name, channel_id, channel_name, author, content, status) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -234,8 +251,7 @@ async function connectToDiscord(serverId, token) {
                 message.channel.id,
                 message.channel.name,
                 message.author.tag + (message.webhookId ? ' [Webhook]' : ''),
-                (message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '')) +
-                (message.attachments.size > 0 ? ` [+${message.attachments.size} attachment(s)]` : ''),
+                logContent,
                 'success'
               ]
             );
@@ -243,6 +259,14 @@ async function connectToDiscord(serverId, token) {
             console.error('Error forwarding message:', error);
             
             // Log error
+            let errorLogContent = message.content || '';
+            if (message.attachments.size > 0) {
+              message.attachments.forEach(att => {
+                errorLogContent += `\n${att.name}: ${att.url}`;
+              });
+            }
+            errorLogContent = errorLogContent.substring(0, 1000); // batasi panjang log
+
             db.run(
               `INSERT INTO logs (timestamp, server_id, server_name, channel_id, channel_name, author, content, status, error_message) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -253,8 +277,7 @@ async function connectToDiscord(serverId, token) {
                 message.channel.id,
                 message.channel.name,
                 message.author.tag + (message.webhookId ? ' [Webhook]' : ''),
-                (message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '')) +
-                (message.attachments.size > 0 ? ` [+${message.attachments.size} attachment(s)]` : ''),
+                errorLogContent,
                 'error',
                 error.message
               ]
@@ -315,6 +338,69 @@ function disconnectFromDiscord(serverId, token) {
     return false;
   }
 }
+
+app.get('/servers/:id/edit', (req, res) => {
+  const serverId = req.params.id;
+  db.get('SELECT * FROM servers WHERE id = ?', [serverId], (err, server) => {
+    if (err) {
+      console.error('Error fetching server:', err.message);
+      return res.status(500).send('Error fetching server');
+    }
+    if (!server) {
+      return res.status(404).send('Server not found');
+    }
+    res.render('edit-token', { server });
+  });
+});
+
+app.post('/servers/:id/edit', (req, res) => {
+  const serverId = req.params.id;
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).send('Token is required');
+  }
+  db.get('SELECT * FROM servers WHERE id = ?', [serverId], async (err, server) => {
+    if (err) {
+      console.error('Error fetching server:', err.message);
+      return res.status(500).send('Error fetching server');
+    }
+    if (!server) {
+      return res.status(404).send('Server not found');
+    }
+    try {
+      // Validate new token by login
+      const client = new Client({
+        checkUpdate: false,
+        autoRedeemNitro: false,
+        captchaService: null
+      });
+      await client.login(token);
+      const newId = client.user.id;
+      if (newId !== serverId) {
+        client.destroy();
+        return res.status(400).send('Token does not match server ID');
+      }
+      client.destroy();
+
+      // Update token in DB
+      db.run('UPDATE servers SET token = ? WHERE id = ?', [token, serverId], async (err) => {
+        if (err) {
+          console.error('Error updating token:', err.message);
+          return res.status(500).send('Error updating token');
+        }
+        // If server is active, disconnect old client and connect with new token
+        if (server.is_active) {
+          disconnectFromDiscord(serverId, server.token);
+          await connectToDiscord(serverId, token);
+        }
+        res.redirect('/servers');
+      });
+    } catch (error) {
+      console.error('Error validating token:', error);
+      res.status(400).send('Invalid token');
+    }
+  });
+});
 
 // Routes
 app.get('/', (req, res) => {
@@ -714,4 +800,4 @@ db.all('SELECT * FROM servers WHERE is_active = 1', [], (err, servers) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

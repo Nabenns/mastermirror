@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Token Server</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script>
+    async function submitEditToken(serverId) {
+      const input = document.getElementById('edit-token-input');
+      const newToken = input.value.trim();
+      if (!newToken) {
+        alert('Token tidak boleh kosong');
+        return;
+      }
+      try {
+        const response = await fetch(`/servers/${serverId}/edit-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ token: newToken })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          alert('Token berhasil diupdate dan reconnect');
+          window.location.href = '/servers';
+        } else {
+          alert('Gagal update token: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error saat update token: ' + err.message);
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Edit Token Server: <%= server.name %></h1>
+  <p>ID Server: <%= server.id %></p>
+  <label for="edit-token-input">Token Baru:</label><br />
+  <input type="text" id="edit-token-input" value="<%= server.token %>" style="width: 400px;" /><br /><br />
+  <button onclick="submitEditToken('<%= server.id %>')">Simpan</button>
+  <a href="/servers"><button>Batal</button></a>
+</body>
+</html>
