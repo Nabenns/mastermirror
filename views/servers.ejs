@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servers - Discord Auto-Forwarder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> Discord Auto-Forwarder
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/servers">
+                            <i class="bi bi-hdd-network me-1"></i> Servers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/channels">
+                            <i class="bi bi-hash me-1"></i> Channels
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logs">
+                            <i class="bi bi-journal-text me-1"></i> Logs
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4 fade-in">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-hdd-network me-2"></i>Managed Servers</h5>
+                        <span class="badge bg-primary rounded-pill">
+                            <%= servers ? servers.length : 0 %> Total
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <% if (!servers || servers.length===0) { %>
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-server display-1 mb-3 d-block opacity-25"></i>
+                                <h5>No Servers Configured</h5>
+                                <p>Add a server to start managing channels.</p>
+                            </div>
+                            <% } else { %>
+                                <div class="row g-3">
+                                    <% servers.forEach(server=> { %>
+                                        <div class="col-12">
+                                            <div class="card bg-dark border-secondary">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <div>
+                                                            <h5 class="card-title mb-1 text-light">
+                                                                <%= server.name %>
+                                                            </h5>
+                                                            <small class="text-muted font-monospace"><i
+                                                                    class="bi bi-hash me-1"></i>
+                                                                <%= server.id %>
+                                                            </small>
+                                                        </div>
+                                                        <span
+                                                            class="badge <%= server.is_active ? 'bg-success' : 'bg-danger' %> bg-opacity-25 text-<%= server.is_active ? 'success' : 'danger' %> border border-<%= server.is_active ? 'success' : 'danger' %> border-opacity-25">
+                                                            <i class="bi bi-circle-fill me-1 small"></i>
+                                                            <%= server.is_active ? 'Connected' : 'Disconnected' %>
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label
+                                                            class="form-label text-muted small text-uppercase fw-bold">Token</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <input type="password"
+                                                                class="form-control bg-black bg-opacity-25 border-secondary text-light"
+                                                                value="<%= server.token %>" readonly
+                                                                id="token-<%= server.id %>">
+                                                            <button class="btn btn-outline-secondary" type="button"
+                                                                onclick="toggleToken('<%= server.id %>')">
+                                                                <i class="bi bi-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="d-flex gap-2">
+                                                        <% if (server.is_active) { %>
+                                                            <form action="/servers/<%= server.id %>/disconnect"
+                                                                method="POST">
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-danger w-100">
+                                                                    <i class="bi bi-power me-1"></i>Disconnect
+                                                                </button>
+                                                            </form>
+                                                            <% } else { %>
+                                                                <form action="/servers/<%= server.id %>/connect"
+                                                                    method="POST">
+                                                                    <button type="submit"
+                                                                        class="btn btn-sm btn-success w-100">
+                                                                        <i class="bi bi-power me-1"></i>Connect
+                                                                    </button>
+                                                                </form>
+                                                                <% } %>
+                                                                    <a href="/channels?server=<%= server.id %>"
+                                                                        class="btn btn-sm btn-primary">
+                                                                        <i class="bi bi-gear me-1"></i>Manage
+                                                                    </a>
+                                                                    <form action="/servers/<%= server.id %>"
+                                                                        method="POST"
+                                                                        onsubmit="return confirm('Delete this server configuration?')"
+                                                                        class="ms-auto">
+                                                                        <input type="hidden" name="_method"
+                                                                            value="DELETE">
+                                                                        <button type="submit"
+                                                                            class="btn btn-sm btn-outline-danger">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <% }); %>
+                                </div>
+                                <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Add Server</h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/servers" method="POST">
+                            <div class="mb-3">
+                                <label for="name" class="form-label text-muted small text-uppercase fw-bold">Server
+                                    Name</label>
+                                <input type="text" class="form-control" id="name" name="name"
+                                    placeholder="My Awesome Server" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="token" class="form-label text-muted small text-uppercase fw-bold">Discord
+                                    Token</label>
+                                <input type="password" class="form-control" id="token" name="token"
+                                    placeholder="User Token" required>
+                                <div class="form-text text-warning small mt-2">
+                                    <i class="bi bi-shield-exclamation me-1"></i> Never share your token.
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-lg me-2"></i>Add Server
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-4 border-top border-secondary border-opacity-25">
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">Discord Auto-Forwarder v0.1.0 &bull; Built with <i
+                    class="bi bi-heart-fill text-danger mx-1"></i> by Benss</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        function toggleToken(serverId) {
+            const tokenField = document.getElementById(`token-${serverId}`);
+            const toggleBtn = tokenField.nextElementSibling;
+            const icon = toggleBtn.querySelector('i');
+
+            if (tokenField.type === 'password') {
+                tokenField.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                tokenField.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+    </script>
+</body>
+
+</html>

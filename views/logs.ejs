@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs - Discord Auto-Forwarder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .table-dark {
+            --bs-table-bg: transparent;
+            --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        .log-content {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> Discord Auto-Forwarder
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/servers">
+                            <i class="bi bi-hdd-network me-1"></i> Servers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/channels">
+                            <i class="bi bi-hash me-1"></i> Channels
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/logs">
+                            <i class="bi bi-journal-text me-1"></i> Logs
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <span class="connection-status <%= isConnected ? 'status-connected' : 'status-disconnected' %>">
+                        <i class="bi <%= isConnected ? 'bi-wifi' : 'bi-wifi-off' %>"></i>
+                        <%= isConnected ? 'Connected' : 'Disconnected' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4 fade-in">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Message Logs</h5>
+                <button id="refreshBtn" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <% if (logs.length===0) { %>
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-x display-1 mb-3 d-block opacity-25"></i>
+                        <h5>No Logs Available</h5>
+                        <p>Forwarded messages will appear here.</p>
+                    </div>
+                    <% } else { %>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0 align-middle">
+                                <thead class="bg-dark text-uppercase small text-muted">
+                                    <tr>
+                                        <th class="ps-4">Time</th>
+                                        <th>Server</th>
+                                        <th>Channel</th>
+                                        <th>Author</th>
+                                        <th>Content</th>
+                                        <th class="text-end pe-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% logs.forEach(log=> { %>
+                                        <tr>
+                                            <td class="ps-4 text-nowrap text-muted small">
+                                                <%= new Date(log.timestamp).toLocaleString() %>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25">
+                                                    <%= log.server_name || 'Unknown' %>
+                                                </span>
+                                            </td>
+                                            <td><small class="text-light">#<%= log.channel_name || 'Unknown' %></small>
+                                            </td>
+                                            <td><small class="text-muted">
+                                                    <%= log.author %>
+                                                </small></td>
+                                            <td class="log-content text-muted small" title="<%= log.content %>">
+                                                <%= log.content || '(No content)' %>
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <% if (log.status==='error' ) { %>
+                                                    <span
+                                                        class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25"
+                                                        title="<%= log.error_message %>">
+                                                        <i class="bi bi-x-circle me-1"></i>Failed
+                                                    </span>
+                                                    <% } else if (log.status==='success' ) { %>
+                                                        <span
+                                                            class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">
+                                                            <i class="bi bi-check-circle me-1"></i>Sent
+                                                        </span>
+                                                        <% } else { %>
+                                                            <span
+                                                                class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">
+                                                                <i class="bi bi-clock me-1"></i>Pending
+                                                            </span>
+                                                            <% } %>
+                                            </td>
+                                        </tr>
+                                        <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                        <% } %>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-4 border-top border-secondary border-opacity-25">
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">Discord Auto-Forwarder v0.1.0 &bull; Built with <i
+                    class="bi bi-heart-fill text-danger mx-1"></i> by Benss</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        document.getElementById('refreshBtn').addEventListener('click', function () {
+            const icon = this.querySelector('i');
+            icon.classList.add('spin-animation'); // You might want to add this class to CSS
+            window.location.reload();
+        });
+    </script>
+</body>
+
+</html>

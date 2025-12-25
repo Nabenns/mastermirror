@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+logs
+data
+.git
+.env
+.gitignore
+Dockerfile
+docker-compose.yml
+ecosystem.config.js
+*.bat
+*.md
