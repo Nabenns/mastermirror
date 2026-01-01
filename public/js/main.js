@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
             bsAlert.close();
         }, 5000);
     });
-
-    // Dynamic connection status check (optional implementation)
-    // setInterval(checkConnectionStatus, 30000);
 });
 
 function copyToClipboard(text) {
@@ -63,4 +60,38 @@ function createToastContainer() {
     container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
     document.body.appendChild(container);
     return container;
+}
+
+// Event delegation for token toggle buttons
+document.addEventListener('click', function (e) {
+    const toggleBtn = e.target.closest('.toggle-token-btn');
+    if (toggleBtn) {
+        const targetId = toggleBtn.getAttribute('data-target');
+        toggleToken(targetId);
+    }
+});
+
+function toggleToken(inputId) {
+    const tokenField = document.getElementById(inputId);
+    if (!tokenField) return;
+
+    // Find the button that targets this input
+    const toggleBtn = document.querySelector(`[data-target="${inputId}"]`);
+    if (!toggleBtn) return;
+
+    const icon = toggleBtn.querySelector('i');
+
+    if (tokenField.type === 'password') {
+        tokenField.type = 'text';
+        if (icon) {
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        }
+    } else {
+        tokenField.type = 'password';
+        if (icon) {
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
 }

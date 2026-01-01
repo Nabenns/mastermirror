@@ -17,7 +17,7 @@ const { Client } = require('discord.js-selfbot-v13');
 const axios = require('axios');
 const helmet = require('helmet');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
+
 const winston = require('winston');
 
 // Configure Logger
@@ -57,12 +57,7 @@ app.use(helmet({
 }));
 app.use(compression());
 
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
+// Rate Limiting removed by user request
 
 // Set up EJS as the view engine
 app.set('view engine', 'ejs');
