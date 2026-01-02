@@ -1233,6 +1233,130 @@ app.post('/channels/:id/webhooks/delete', (req, res) => {
   });
 });
 
+// --- Bulk Actions ---
+
+// Activate All Channels
+app.post('/channels/activate-all', (req, res) => {
+  db.run('UPDATE channels SET is_forwarding = 1', [], (err) => {
+    if (err) {
+      console.error('Error activating all channels:', err.message);
+      return res.redirect('/channels?error=' + encodeURIComponent('Error activating all channels'));
+    }
+    res.redirect('/channels?success=' + encodeURIComponent('All channels activated successfully'));
+  });
+});
+
+// Bulk Import Channels
+app.post('/channels/bulk-import', (req, res) => {
+  const { server_id, bulk_data } = req.body;
+
+  if (!server_id || !bulk_data) {
+    return res.redirect('/channels?error=' + encodeURIComponent('Server and data are required'));
+  }
+
+  // Validate server exists and is active
+  db.get('SELECT * FROM servers WHERE id = ? AND is_active = 1', [server_id], async (err, server) => {
+    if (err || !server) {
+      return res.redirect('/channels?error=' + encodeURIComponent('Server not found or not connected'));
+    }
+
+    const client = discordClients.get(server.token);
+    if (!client) {
+      return res.redirect('/channels?error=' + encodeURIComponent('Discord client not found'));
+    }
+
+    let parsedData = [];
+    try {
+      // Try parsing as standard JSON first
+      parsedData = JSON.parse(bulk_data);
+    } catch (e) {
+      try {
+        // Try parsing as the user's format (comma separated arrays) by wrapping in brackets
+        // Remove trailing comma if present to avoid JSON error
+        let cleanData = bulk_data.trim();
+        if (cleanData.endsWith(',')) cleanData = cleanData.slice(0, -1);
+        parsedData = JSON.parse(`[${cleanData}]`);
+      } catch (e2) {
+        return res.redirect('/channels?error=' + encodeURIComponent('Invalid format. Use ["id", "url"], ["id", "url"]'));
+      }
+    }
+
+    if (!Array.isArray(parsedData)) {
+      return res.redirect('/channels?error=' + encodeURIComponent('Invalid data format. Expected an array.'));
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+    let errors = [];
+
+    // Process sequentially to avoid race conditions with DB or rate limits
+    for (const item of parsedData) {
+      // Handle both ["id", "url"] and {"id": "...", "url": "..."} formats
+      let channelId, webhookUrl;
+
+      if (Array.isArray(item) && item.length >= 2) {
+        channelId = item[0];
+        webhookUrl = item[1];
+      } else if (typeof item === 'object' && item.id && item.url) {
+        channelId = item.id;
+        webhookUrl = item.url;
+      } else {
+        failCount++;
+        continue;
+      }
+
+      // Validate Channel
+      const channel = client.channels.cache.get(channelId);
+      if (!channel) {
+        failCount++;
+        errors.push(`Channel ${channelId} not found`);
+        continue;
+      }
+
+      // Validate Webhook URL
+      try {
+        new URL(webhookUrl);
+      } catch (e) {
+        failCount++;
+        errors.push(`Invalid URL for ${channelId}`);
+        continue;
+      }
+
+      // Insert into DB
+      try {
+        await new Promise((resolve, reject) => {
+          db.run(
+            'INSERT INTO channels (id, server_id, name, webhook_url, is_forwarding) VALUES (?, ?, ?, ?, 1)',
+            [channelId, server_id, channel.name, webhookUrl],
+            function (err) {
+              if (err) reject(err);
+              else resolve();
+            }
+          );
+        });
+        successCount++;
+      } catch (err) {
+        failCount++;
+        if (err.message.includes('UNIQUE constraint failed')) {
+          errors.push(`Channel ${channel.name} already exists`);
+        } else {
+          errors.push(`Error adding ${channel.name}`);
+        }
+      }
+    }
+
+    let message = `Imported ${successCount} channels. ${failCount} failed.`;
+    if (errors.length > 0 && errors.length < 5) {
+      message += ' (' + errors.join(', ') + ')';
+    } else if (errors.length >= 5) {
+      message += ' (Check logs for details)';
+      console.log('Bulk Import Errors:', errors);
+    }
+
+    res.redirect('/channels?success=' + encodeURIComponent(message));
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

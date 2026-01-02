@@ -127,6 +127,7 @@
             </div>
 
             <div class="col-lg-4">
+                <!-- Add Channel Card -->
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Add Channel</h5>
@@ -174,6 +175,58 @@
                     </div>
                 </div>
 
+                <!-- Bulk Actions Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Bulk Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Activate All -->
+                        <form action="/channels/activate-all" method="POST" class="mb-4">
+                            <label class="form-label text-muted small text-uppercase fw-bold">Global Actions</label>
+                            <button type="submit" class="btn btn-success w-100"
+                                onclick="return confirm('Are you sure you want to activate ALL channels?')">
+                                <i class="bi bi-check-all me-2"></i>Activate All Channels
+                            </button>
+                        </form>
+
+                        <hr class="border-secondary">
+
+                        <!-- Bulk Import -->
+                        <% if (servers && servers.length> 0) { %>
+                            <form action="/channels/bulk-import" method="POST">
+                                <label class="form-label text-muted small text-uppercase fw-bold">Bulk Import</label>
+                                <div class="mb-3">
+                                    <select class="form-select bg-dark text-light border-secondary" name="server_id"
+                                        required>
+                                        <option value="" selected disabled>Select Server</option>
+                                        <% servers.forEach(server=> { %>
+                                            <option value="<%= server.id %>">
+                                                <%= server.name %>
+                                            </option>
+                                            <% }); %>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <textarea class="form-control bg-dark text-light border-secondary" name="bulk_data"
+                                        rows="4"
+                                        placeholder='["CHANNEL_ID", "WEBHOOK_URL"],&#10;["CHANNEL_ID", "WEBHOOK_URL"]'
+                                        required></textarea>
+                                    <div class="form-text text-muted small">
+                                        Format: <code>["id", "url"], ["id", "url"]</code>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Import Channels
+                                </button>
+                            </form>
+                            <% } else { %>
+                                <div class="text-muted small text-center">Connect a server to use bulk import.</div>
+                                <% } %>
+                    </div>
+                </div>
+
+                <!-- Instructions Card -->
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Instructions</h5>
