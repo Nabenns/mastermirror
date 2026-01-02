@@ -701,7 +701,7 @@
                                         <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Settings</h5>
                                     </div>
                                     <div class="card-body">
-                                        <form action="/settings" method="POST">
+                                        <form action="/settings" method="POST" class="mb-4">
                                             <div class="mb-3">
                                                 <label for="discordToken"
                                                     class="form-label text-muted small text-uppercase fw-bold">Discord
@@ -722,7 +722,25 @@
                                                 </div>
                                             </div>
                                             <button type="submit" class="btn btn-primary w-100">
-                                                <i class="bi bi-save me-2"></i>Save Configuration
+                                                <i class="bi bi-save me-2"></i>Save Token
+                                            </button>
+                                        </form>
+
+                                        <hr class="border-secondary">
+
+                                        <form action="/settings/preferences" method="POST">
+                                            <label class="form-label text-muted small text-uppercase fw-bold">Global
+                                                Preferences</label>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="enableBranding"
+                                                    name="enable_branding" <%=settings && settings.enable_branding==='1'
+                                                    ? 'checked' : '' %>>
+                                                <label class="form-check-label text-light" for="enableBranding">
+                                                    Show "Powered by MasterMirror" footer
+                                                </label>
+                                            </div>
+                                            <button type="submit" class="btn btn-outline-light w-100">
+                                                <i class="bi bi-sliders me-2"></i>Update Preferences
                                             </button>
                                         </form>
                                     </div>

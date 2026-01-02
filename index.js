@@ -144,8 +144,39 @@ const db = new sqlite3.Database(
         name TEXT,
         FOREIGN KEY (channel_id) REFERENCES channels (id)
       )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )`);
+
+      // Initialize default settings
+      db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('enable_branding', '1')`);
+
+      // Load settings into cache
+      loadSettings();
     }
   });
+
+// Global Settings Cache
+let globalSettings = {
+  enable_branding: '1'
+};
+
+function loadSettings() {
+  db.all('SELECT * FROM settings', [], (err, rows) => {
+    if (err) {
+      console.error('Error loading settings:', err.message);
+      return;
+    }
+    if (rows) {
+      rows.forEach(row => {
+        globalSettings[row.key] = row.value;
+      });
+      console.log('Settings loaded:', globalSettings);
+    }
+  });
+}
 
 // Discord clients map (token -> client)
 const discordClients = new Map();
@@ -361,6 +392,28 @@ async function connectToDiscord(serverId, token) {
             if (message.embeds.length > 0) {
               if (!webhookData.embeds) webhookData.embeds = [];
               message.embeds.forEach(embed => webhookData.embeds.push(embed));
+            }
+
+            // --- BRANDING LOGIC ---
+            if (globalSettings.enable_branding === '1') {
+              const brandingText = "Powered by MasterMirror (.naban)";
+
+              if (webhookData.embeds && webhookData.embeds.length > 0) {
+                // Add to the footer of the last embed
+                const lastEmbed = webhookData.embeds[webhookData.embeds.length - 1];
+                if (lastEmbed.footer) {
+                  lastEmbed.footer.text = `${lastEmbed.footer.text} • ${brandingText}`;
+                } else {
+                  lastEmbed.footer = { text: brandingText };
+                }
+              } else {
+                // Append to content
+                if (webhookData.content) {
+                  webhookData.content += `\n\n*${brandingText}*`;
+                } else {
+                  webhookData.content = `*${brandingText}*`;
+                }
+              }
             }
 
             // --- DELAY LOGIC ---
@@ -612,6 +665,7 @@ app.get('/', (req, res) => {
           totalCount,
           activeChannels: activeChannelsCount,
           isConnected: discordClients.size > 0,
+          settings: globalSettings, // Pass global settings
           error: req.query.error || null,
           success: req.query.success || null
         });
@@ -691,6 +745,23 @@ app.post('/settings', (req, res) => {
       // We need to fetch data again to render index properly, or just redirect with error
       res.redirect('/?error=' + encodeURIComponent('Invalid Discord token'));
     });
+});
+
+app.post('/settings/preferences', (req, res) => {
+  const { enable_branding } = req.body;
+  const value = enable_branding === 'on' ? '1' : '0';
+
+  db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['enable_branding', value], (err) => {
+    if (err) {
+      console.error('Error updating preferences:', err.message);
+      return res.redirect('/?error=' + encodeURIComponent('Error updating preferences'));
+    }
+
+    // Update cache
+    globalSettings.enable_branding = value;
+
+    res.redirect('/?success=' + encodeURIComponent('Preferences saved'));
+  });
 });
 
 app.get('/servers', (req, res) => {
