@@ -106,7 +106,28 @@ Docker provides an isolated environment, ensuring consistency across different s
 2.  **View Logs**: `docker-compose logs -f`
 3.  **Stop**: `docker-compose down`
 
+### Option 3: Linux Reverse Proxy (Nginx)
+
+If you are running on a Linux VPS and want to use a domain name (e.g., `mirror1.domain.com`), use the included setup script.
+
+1.  **Upload the script**: Copy `setup-nginx.sh` to your server.
+2.  **Make it executable**: `chmod +x setup-nginx.sh`
+3.  **Run the script**: `sudo ./setup-nginx.sh`
+4.  **Follow the prompts**: Enter your domain name and choose whether to enable SSL (HTTPS).
+
 ## Troubleshooting
+
+### Forgot Password?
+
+Because passwords are securely hashed, they **cannot be decrypted** or viewed. If you forget your password, you must reset it using the included utility script.
+
+1.  **Stop the server** (if running).
+2.  **Run the reset script**:
+    ```bash
+    node reset-password.js <new_password>
+    ```
+    *Example:* `node reset-password.js mynewsecretpassword`
+3.  **Restart the server**.
 
 - Check the logs directory for error logs
 - Make sure your Discord token is valid

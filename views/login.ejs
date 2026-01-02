@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Discord Auto-Forwarder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #1a1b1e;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background-color: #2b2d31;
+            border: 1px solid #1e1f22;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header i {
+            font-size: 3rem;
+            color: #5865F2;
+        }
+
+        .form-control {
+            background-color: #1e1f22;
+            border-color: #1e1f22;
+            color: #dbdee1;
+        }
+
+        .form-control:focus {
+            background-color: #1e1f22;
+            border-color: #5865F2;
+            color: #dbdee1;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background-color: #5865F2;
+            border-color: #5865F2;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: #4752c4;
+            border-color: #4752c4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card fade-in">
+        <div class="login-header">
+            <i class="bi bi-robot mb-3"></i>
+            <h4 class="text-light">Welcome Back</h4>
+            <p class="text-muted">Please enter your password to continue</p>
+        </div>
+
+        <% if (error) { %>
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <%= error %>
+            </div>
+            <% } %>
+
+                <form action="/login" method="POST">
+                    <div class="mb-4">
+                        <label for="password" class="form-label text-light">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required autofocus>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+    </div>
+</body>
+
+</html>

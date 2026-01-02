@@ -19,6 +19,8 @@ const helmet = require('helmet');
 const compression = require('compression');
 
 const winston = require('winston');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 
 // Configure Logger
 const logger = winston.createLogger({
@@ -75,6 +77,25 @@ app.use(methodOverride(function (req, res) {
   }
 }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Session Configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'discord-autoforwarder-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Authentication Middleware
+const checkAuth = (req, res, next) => {
+  if (req.session.isAuthenticated) {
+    return next();
+  }
+  res.redirect('/login');
+};
 
 // Initialize database
 const db = new sqlite3.Database(
@@ -152,6 +173,15 @@ const db = new sqlite3.Database(
 
       // Initialize default settings
       db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('enable_branding', '1')`);
+
+      // Initialize default password
+      db.get("SELECT value FROM settings WHERE key = 'web_password'", async (err, row) => {
+        if (!row) {
+          const hashedPassword = await bcrypt.hash('bensserver211352', 10);
+          db.run("INSERT INTO settings (key, value) VALUES ('web_password', ?)", [hashedPassword]);
+          console.log('Default password initialized');
+        }
+      });
 
       // Load settings into cache
       loadSettings();
@@ -598,6 +628,65 @@ app.post('/servers/:id/edit', (req, res) => {
 });
 
 // Routes
+
+// Login Routes
+app.get('/login', (req, res) => {
+  if (req.session.isAuthenticated) {
+    return res.redirect('/');
+  }
+  res.render('login', { error: null });
+});
+
+app.post('/login', (req, res) => {
+  const { password } = req.body;
+
+  db.get("SELECT value FROM settings WHERE key = 'web_password'", async (err, row) => {
+    if (err || !row) {
+      return res.render('login', { error: 'An error occurred. Please try again.' });
+    }
+
+    const isValid = await bcrypt.compare(password, row.value);
+    if (isValid) {
+      req.session.isAuthenticated = true;
+      res.redirect('/');
+    } else {
+      res.render('login', { error: 'Invalid password' });
+    }
+  });
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/login');
+});
+
+// Protect all following routes
+app.use(checkAuth);
+
+// API to change password
+app.post('/api/change-password', async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  db.get("SELECT value FROM settings WHERE key = 'web_password'", async (err, row) => {
+    if (err || !row) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, row.value);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    db.run("UPDATE settings SET value = ? WHERE key = 'web_password'", [hashedNewPassword], (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Failed to update password' });
+      }
+      res.json({ success: true });
+    });
+  });
+});
+
 app.get('/', (req, res) => {
   // Get all servers
   db.all('SELECT * FROM servers', [], (err, servers) => {
