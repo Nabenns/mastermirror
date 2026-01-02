@@ -9,4 +9,4 @@ services:
       - ./logs:/app/logs
     restart: always
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development

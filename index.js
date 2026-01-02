@@ -45,6 +45,9 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust first proxy (required for Nginx + Secure Cookies)
+app.set('trust proxy', 1);
+
 // Security & Performance Middleware
 app.use(helmet({
   contentSecurityPolicy: {
