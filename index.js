@@ -41,6 +41,16 @@ if (process.env.NODE_ENV !== 'production') {
   }));
 }
 
+// Global Error Handling to prevent crashes
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+  // Keep the process alive, but log the critical error
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
