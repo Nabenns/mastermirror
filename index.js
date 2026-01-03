@@ -602,6 +602,8 @@ app.post('/servers/:id/edit', (req, res) => {
         autoRedeemNitro: false,
         captchaService: null
       });
+      // Prevent crash on client error
+      client.on('error', (err) => console.error('Temporary client error:', err));
       await client.login(token);
       const newId = client.user.id;
       if (newId !== serverId) {
@@ -787,6 +789,8 @@ app.post('/settings', (req, res) => {
     autoRedeemNitro: false,
     captchaService: null
   });
+  // Prevent crash on client error
+  client.on('error', (err) => console.error('Temporary client error:', err));
 
   client.login(discordToken)
     .then(() => {
@@ -879,6 +883,8 @@ app.post('/servers', (req, res) => {
     autoRedeemNitro: false,
     captchaService: null
   });
+  // Prevent crash on client error
+  client.on('error', (err) => console.error('Temporary client error:', err));
 
   // Validate token by attempting to login
   client.login(token)
