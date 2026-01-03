@@ -226,8 +226,24 @@ const discordClients = new Map();
 
 // Load the ClientUserSettingManager class to patch
 try {
-  // Monkey patch to fix the ClientUserSettingManager issue with null friend_source_flags
-  const { ClientUserSettingManager } = require('discord.js-selfbot-v13');
+  let ClientUserSettingManager;
+
+  try {
+    // Try getting it from the main export
+    const Discord = require('discord.js-selfbot-v13');
+    ClientUserSettingManager = Discord.ClientUserSettingManager;
+  } catch (e) {
+    // Ignore
+  }
+
+  // If not found, try internal path (common in some installations)
+  if (!ClientUserSettingManager) {
+    try {
+      ClientUserSettingManager = require('discord.js-selfbot-v13/src/managers/ClientUserSettingManager');
+    } catch (e) {
+      console.warn('Could not require ClientUserSettingManager from internal path:', e.message);
+    }
+  }
 
   // Check if the class exists and has the _patch method before attempting to patch
   if (ClientUserSettingManager && ClientUserSettingManager.prototype && ClientUserSettingManager.prototype._patch) {
@@ -236,7 +252,8 @@ try {
     // Override the _patch method to handle null friend_source_flags
     ClientUserSettingManager.prototype._patch = function (data) {
       // Add a defensive check for friend_source_flags
-      if (!data.friend_source_flags) {
+      if (data && !data.friend_source_flags) {
+        // console.log('Patching missing friend_source_flags'); // Debug log
         data.friend_source_flags = {
           all: false,
           mutual_friends: false,
@@ -247,7 +264,7 @@ try {
     };
     console.log("Successfully patched ClientUserSettingManager to handle null friend_source_flags");
   } else {
-    console.warn("Could not patch ClientUserSettingManager - class structure may have changed");
+    console.warn("Could not patch ClientUserSettingManager - class structure may have changed or class not found");
   }
 } catch (error) {
   console.error("Error while patching ClientUserSettingManager:", error.message);
