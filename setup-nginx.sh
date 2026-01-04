@@ -29,12 +29,14 @@ if [ -z "$DOMAIN_NAME" ]; then
   exit 1
 fi
 
-APP_PORT=3000
+read -p "Enter the app port (default: 3000): " APP_PORT
+APP_PORT=${APP_PORT:-3000}
+
 CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN_NAME"
 
 # 3. Create Nginx Configuration
 echo ""
-echo "[3/5] Creating Nginx configuration for $DOMAIN_NAME..."
+echo "[3/5] Creating Nginx configuration for $DOMAIN_NAME on port $APP_PORT..."
 
 cat > "$CONFIG_FILE" <<EOF
 server {
@@ -50,6 +52,7 @@ server {
         proxy_cache_bypass \$http_upgrade;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
 EOF
