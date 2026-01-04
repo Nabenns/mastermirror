@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: discord-autoforwarder
+    container_name: "${APP_NAME:-discord-autoforwarder}"
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
